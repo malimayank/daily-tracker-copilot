@@ -104,8 +104,9 @@ const updateProfile = async (req, res) => {
   try {
     const { name, avatar } = req.body;
     const updates = {};
-    if (name !== undefined) updates.name = name;
-    if (avatar !== undefined) updates.avatar = avatar;
+    // Explicitly cast to string to prevent NoSQL operator injection
+    if (name !== undefined) updates.name = String(name);
+    if (avatar !== undefined) updates.avatar = String(avatar);
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {
       new: true,

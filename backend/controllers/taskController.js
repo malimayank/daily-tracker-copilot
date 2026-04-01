@@ -33,8 +33,11 @@ const getTasks = async (req, res) => {
     if (completed !== undefined) {
       filter.completed = completed === 'true';
     }
-    if (priority) filter.priority = priority;
-    if (category) filter.category = category;
+    // Whitelist priority against the schema enum to prevent operator injection
+    const PRIORITY_ENUM = ['high', 'medium', 'low'];
+    if (priority && PRIORITY_ENUM.includes(priority)) filter.priority = priority;
+    // Cast category to string to block object/operator injection
+    if (category) filter.category = String(category);
     if (search) {
       const safeSearch = escapeRegex(search);
       filter.$or = [
