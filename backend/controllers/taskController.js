@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Task = require('../models/Task');
 
 // Escape special regex characters to prevent ReDoS from user-supplied search terms
@@ -57,7 +58,7 @@ const getTasks = async (req, res) => {
       filter.$or = [{ title: searchRegex }, { description: searchRegex }];
     }
 
-    const tasks = await Task.find(filter).sort({ order: 1, createdAt: 1 });
+    const tasks = await Task.find(mongoose.sanitizeFilter(filter)).sort({ order: 1, createdAt: 1 });
     res.json({ success: true, tasks, count: tasks.length });
   } catch (error) {
     console.error('GetTasks error:', error);
