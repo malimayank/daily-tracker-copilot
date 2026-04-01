@@ -3,6 +3,14 @@ const Task = require('../models/Task');
 // Escape special regex characters to prevent ReDoS from user-supplied search terms
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// Parse and validate a date string; returns a Date or null if invalid
+const parseDate = (str) => {
+  // Only accept YYYY-MM-DD or ISO 8601 date strings to limit the attack surface
+  if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}(T[\d:.Z+-]+)?$/.test(str)) return null;
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 // GET /api/tasks
 const getTasks = async (req, res) => {
   try {
@@ -10,24 +18,29 @@ const getTasks = async (req, res) => {
     const filter = { user: req.user._id };
 
     if (date) {
-      // Match tasks for a single calendar day
-      const start = new Date(date);
+      const parsed = parseDate(date);
+      if (!parsed) return res.status(400).json({ success: false, message: 'Invalid date' });
+      // Match tasks for a single calendar day using validated Date objects
+      const start = new Date(parsed);
       start.setHours(0, 0, 0, 0);
-      const end = new Date(date);
+      const end = new Date(parsed);
       end.setHours(23, 59, 59, 999);
       filter.date = { $gte: start, $lte: end };
     } else if (startDate || endDate) {
-      filter.date = {};
+      const dateRange = {};
       if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        filter.date.$gte = start;
+        const parsed = parseDate(startDate);
+        if (!parsed) return res.status(400).json({ success: false, message: 'Invalid startDate' });
+        parsed.setHours(0, 0, 0, 0);
+        dateRange.$gte = parsed;
       }
       if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        filter.date.$lte = end;
+        const parsed = parseDate(endDate);
+        if (!parsed) return res.status(400).json({ success: false, message: 'Invalid endDate' });
+        parsed.setHours(23, 59, 59, 999);
+        dateRange.$lte = parsed;
       }
+      filter.date = dateRange;
     }
 
     if (completed !== undefined) {
