@@ -1,5 +1,8 @@
 const Task = require('../models/Task');
 
+// Escape special regex characters to prevent ReDoS from user-supplied search terms
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // GET /api/tasks
 const getTasks = async (req, res) => {
   try {
@@ -33,9 +36,10 @@ const getTasks = async (req, res) => {
     if (priority) filter.priority = priority;
     if (category) filter.category = category;
     if (search) {
+      const safeSearch = escapeRegex(search);
       filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { title: { $regex: safeSearch, $options: 'i' } },
+        { description: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 
 const app = express();
@@ -8,14 +9,34 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// CORS — allow all origins in development; restrict via env var in production
+// CORS — restrict to explicit origin in production; default to localhost in development
+const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: allowedOrigin,
   credentials: true,
 };
 app.use(cors(corsOptions));
 
 app.use(express.json());
+
+// Rate limiting — tighter limits on auth endpoints, general limit on everything else
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts, please try again later.' },
+});
+
+app.use(generalLimiter);
 
 // Health check
 app.get('/', (req, res) => {
@@ -23,7 +44,7 @@ app.get('/', (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/stats', require('./routes/stats'));
 
