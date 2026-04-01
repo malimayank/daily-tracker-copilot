@@ -52,11 +52,9 @@ const getTasks = async (req, res) => {
     // Cast category to string to block object/operator injection
     if (category) filter.category = String(category);
     if (search) {
-      const safeSearch = escapeRegex(search);
-      filter.$or = [
-        { title: { $regex: safeSearch, $options: 'i' } },
-        { description: { $regex: safeSearch, $options: 'i' } },
-      ];
+      // Build a proper RegExp object with escaped pattern — avoids string-based $regex taint
+      const searchRegex = new RegExp(escapeRegex(String(search)), 'i');
+      filter.$or = [{ title: searchRegex }, { description: searchRegex }];
     }
 
     const tasks = await Task.find(filter).sort({ order: 1, createdAt: 1 });
