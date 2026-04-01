@@ -17,7 +17,7 @@ export const auth = {
     axiosInstance.post('/auth/register', data),
   login: (data: { email: string; password: string }) =>
     axiosInstance.post('/auth/login', data),
-  getProfile: () => axiosInstance.get('/auth/me'),
+  getProfile: () => axiosInstance.get('/auth/profile'),
   updateProfile: (data: Partial<{ name: string; email: string; avatar: string }>) =>
     axiosInstance.put('/auth/profile', data),
 }
@@ -31,9 +31,9 @@ export const tasks = {
     axiosInstance.put(`/tasks/${id}`, data),
   delete: (id: string) => axiosInstance.delete(`/tasks/${id}`),
   reorder: (taskList: { id: string; order: number }[]) =>
-    axiosInstance.put('/tasks/reorder', { tasks: taskList }),
+    axiosInstance.put('/tasks/reorder/bulk', { tasks: taskList }),
   bulkUpdate: (taskIds: string[], updates: Record<string, unknown>) =>
-    axiosInstance.put('/tasks/bulk', { taskIds, updates }),
+    axiosInstance.put('/tasks/bulk/update', { taskIds, updates }),
 }
 
 export const stats = {
